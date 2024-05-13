@@ -14,12 +14,6 @@ func (b *Binance) FetchKLines(symbol interfaces.Symbol, interval string, startTi
 	return []interfaces.KLine{}, errors.New("not implement yet")
 }
 
-func (b *Binance) FetchOrderBook(symbol string) (interfaces.OrderBook, error) {
-	// Implementation specific to Binance
-	return interfaces.OrderBook{}, errors.New("not implement yet")
-}
-
-func (b *Binance) PlaceOrder(order interfaces.Order) (interfaces.OrderResponse, error) {
-	// Implementation specific to Binance
-	return interfaces.OrderResponse{}, errors.New("not implement yet")
+func (b *Binance) SubscribeKLine(symbol interfaces.Symbol, interval string, dataHandler func(data interface{})) error {
+	return errors.New("not implement yet")
 }
