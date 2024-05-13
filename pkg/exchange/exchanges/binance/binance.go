@@ -1,9 +1,14 @@
-package exchanges
+package binance
 
 import (
 	"errors"
 
 	"github.com/BullionBear/crypto-feed/pkg/exchange/interfaces"
+)
+
+const (
+	apiURL      = "https://api.binance.com"
+	candleStick = "/api/v3/klines"
 )
 
 type Binance struct {
