@@ -7,7 +7,7 @@ import (
 
 type ExchangeFactory struct{}
 
-func (f *ExchangeFactory) GetExchange(name string) interfaces.Exchange {
+func (f *ExchangeFactory) GetExchange(name string) interfaces.IExchange {
 	switch name {
 	case "binance":
 		return &binance.Binance{}
