@@ -97,37 +97,6 @@ func (srv *KLineService) ListSubsriber() []int64 {
 	return result
 }
 
-// unc (srv *KLineService) subscribeKline(ctx context.Context) error {
-// 	for {
-// 		doneC, _, err := binance.WsKlineServe(strings.ToLower(srv.symbol), "1s", srv.wsKlineHandler, srv.handleError)
-// 		if err != nil {
-// 			log.Errorf("Unable to listen to WebSocket: %+v", err)
-// 			select {
-// 			case <-ctx.Done():
-// 				log.Info("Shutdown signal received, stopping reconnection attempts")
-// 				return ctx.Err()
-// 			case <-time.After(1 * time.Second):
-// 				continue
-// 			}
-// 		}
-//
-// 		select {
-// 		case <-doneC:
-// 			log.Info("WebSocket connection closed. Reconnecting...")
-// 			select {
-// 			case <-ctx.Done():
-// 				log.Info("Shutdown signal received, stopping reconnection attempts")
-// 				return ctx.Err()
-// 			case <-time.After(1 * time.Second):
-// 				// Continue to reconnect
-// 			}
-// 		case <-ctx.Done():
-// 			log.Info("Shutdown signal received, closing WebSocket connection")
-// 			return ctx.Err()
-// 		}
-// 	}
-//
-
 func (srv *KLineService) requestCurrentKline() {
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
