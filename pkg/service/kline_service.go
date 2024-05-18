@@ -11,10 +11,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// var monthInSecond = 30 * 24 * int(time.Hour)
-
 type KLineService struct {
 	symbol string
+	length int64
 	// Container
 	container linkedlist.IndexLinkedList[Kline]
 	// Dependencies
@@ -23,29 +22,56 @@ type KLineService struct {
 	id          int64
 	subscribers map[int64]func(*Kline)
 	// pipeline control
-	mutex     sync.Mutex
-	controlCh chan struct{}
+	mutex   sync.Mutex
+	eventCh chan struct{}
+	// init control
+	isSetup bool
 }
 
 func NewKLineService(symbol string, length int64) *KLineService {
 	return &KLineService{
 		symbol:      symbol,
+		length:      length,
 		container:   *linkedlist.NewIndexedLinkedList[Kline](),
 		client:      *binance.NewClient("", ""),
 		id:          0,
 		subscribers: make(map[int64]func(*Kline)),
-		controlCh:   make(chan struct{}, 1),
+		eventCh:     make(chan struct{}, 1),
+		isSetup:     false,
 	}
 }
 
 func (srv *KLineService) Run() error {
+	setupCh := make(chan struct{})
+	go srv.publishKline(setupCh)
 	go srv.requestCurrentKline()
-	go srv.publishKline()
-	// go srv.subscribeKline(ctx)
-	// go srv.requestCurrentKline(ctx)
-	// srv.requestHistoricalKline()
-	// go srv.removeOldestKline(ctx)
+	<-setupCh
+	log.Info("Received First Kline")
+	go srv.requestHistoricalKline(setupCh)
+	<-setupCh
+	log.Info("Request target historical data")
+	// go srv.popHistoricalKline()
 	return nil
+}
+
+func (srv *KLineService) Symbol() string {
+	return srv.symbol
+}
+
+func (srv *KLineService) Length() int64 {
+	return srv.length
+}
+
+func (srv *KLineService) Head() (Kline, error) {
+	return srv.container.Head()
+}
+
+func (srv *KLineService) Tail() (Kline, error) {
+	return srv.container.Tail()
+}
+
+func (srv *KLineService) Size() int64 {
+	return srv.container.Size()
 }
 
 func (srv *KLineService) Subscribe(handler func(event *Kline)) int64 {
@@ -97,11 +123,11 @@ func (srv *KLineService) requestCurrentKline() {
 
 	for range ticker.C {
 		// Perform the request
-		req := srv.client.NewKlinesService()
-		req.Symbol(strings.ToUpper(srv.symbol))
-		req.Limit(5) // The latest recent 5
-		req.Interval("1s")
-		bKlines, err := req.Do(context.Background())
+		ksrv := srv.client.NewKlinesService()
+		ksrv.Symbol(strings.ToUpper(srv.symbol))
+		ksrv.Limit(5) // The latest recent 5
+		ksrv.Interval("1s")
+		bKlines, err := ksrv.Do(context.Background())
 		if err != nil {
 			log.Errorf("Fail to retrieve kline: %+v", err)
 			continue
@@ -113,16 +139,20 @@ func (srv *KLineService) requestCurrentKline() {
 				log.Errorf("Fail to convert kline: %+v", bKline)
 				continue
 			}
-			if err := srv.insertLastestKline(kline); err == nil {
-				srv.controlCh <- struct{}{}
+			if err := srv.pushBack(kline); err == nil {
+				srv.eventCh <- struct{}{}
 				continue
 			}
 		}
 	}
 }
 
-func (srv *KLineService) publishKline() {
-	for range srv.controlCh {
+func (srv *KLineService) publishKline(setupCh chan<- struct{}) {
+	for range srv.eventCh {
+		if !srv.isSetup {
+			srv.isSetup = true
+			setupCh <- struct{}{}
+		}
 		kline, _ := srv.container.Tail()
 		for _, subscriber := range srv.subscribers {
 			subscriber(&kline)
@@ -130,32 +160,62 @@ func (srv *KLineService) publishKline() {
 	}
 }
 
-// func (srv *KLineService) requestHistoricalKline() {
-// 	now := time.Now().UTC().Second()
-// 	start := now - monthInSecond
-// 	srv := srv.client.NewKlinesService()
-// 	srv.Symbol(strings.ToUpper(srv.symbol))
-// 	srv.Interval("1s")
-// 	interval := 600
-//
-// 	for last := now; last >= start; last -= interval {
-// 		srv.StartTime(int64(last-interval) * 1000)
-// 		srv.EndTime(int64(last))
-// 		bklines, err := srv.Do(context.Background())
-// 		if err != nil {
-// 			log.Errorf("Fail to retrieve historical klines %s", err.Error())
-// 		}
-// 		for i := len(bklines) - 1; i >= 0; i-- {
-// 			bkline := bklines[i]
-// 			kline, err := convertFromKline(bkline)
-// 			if err != nil {
-// 				log.Printf("Fail to convert klines %s", err.Error())
-// 				continue
-// 			}
-// 			srv.insertHistoricalKline(kline)
-// 		}
-// 	}
-// }
+func (srv *KLineService) initRequest() error {
+	ksrv := srv.client.NewKlinesService()
+	ksrv.Symbol(strings.ToUpper(srv.symbol))
+	ksrv.Limit(512)
+	ksrv.Interval("1s")
+	bKlines, err := ksrv.Do(context.Background())
+	if err != nil {
+		log.Errorf("Fail to retrieve kline: %+v", err)
+		return err
+	}
+	for i := len(bKlines) - 1; i >= 0; i-- {
+		bKline := bKlines[i]
+		kline, err := convertFromKline(bKline)
+		if err != nil {
+			log.Errorf("Fail to convert kline: %+v", bKline)
+			continue
+		}
+		srv.pushFront(kline)
+	}
+	return nil
+}
+
+func (srv *KLineService) requestHistoricalKline(setupCh chan<- struct{}) {
+	ksrv := srv.client.NewKlinesService()
+	limit := 500
+	ksrv.Symbol(strings.ToUpper(srv.symbol))
+	ksrv.Interval("1s")
+	ksrv.Limit(limit)
+	for size := srv.container.Size(); size < srv.length; size = srv.container.Size() {
+		// log.Infof("Current Size: %d", size)
+		startKline, err := srv.container.Head()
+		if err != nil {
+			log.Errorf("fail get head kline %s", err.Error())
+		}
+		endTime := startKline.OpenTime
+		startTime := endTime - int64(limit*1000) // back 500 seconds
+		ksrv.StartTime(startTime)
+		ksrv.EndTime(endTime)
+		bklines, err := ksrv.Do(context.Background())
+		if err != nil {
+			log.Errorf("Fail to retrieve historical klines %s", err.Error())
+		}
+		for i := len(bklines) - 1; i >= 0; i-- {
+			bkline := bklines[i]
+			kline, err := convertFromKline(bkline)
+			if err != nil {
+				log.Errorf("Fail to convert klines %s", err.Error())
+				continue
+			}
+			if err := srv.pushFront(kline); err != nil {
+				log.Errorf("Fail to push front kline %+v", kline)
+			}
+		}
+	}
+	setupCh <- struct{}{}
+}
 
 // func (srv *KLineService) removeOldestKline(ctx context.Context) {
 //
@@ -165,11 +225,18 @@ func (srv *KLineService) publishKline() {
 //
 // }
 
-func (srv *KLineService) insertLastestKline(kline *Kline) error {
+func (srv *KLineService) pushBack(kline *Kline) error {
 	srv.mutex.Lock()
 	defer srv.mutex.Unlock()
 	closeTime := kline.CloseTime
 	return srv.container.PushBack(closeTime, *kline)
+}
+
+func (srv *KLineService) pushFront(kline *Kline) error {
+	srv.mutex.Lock()
+	defer srv.mutex.Unlock()
+	closeTime := kline.CloseTime
+	return srv.container.PushFront(closeTime, *kline)
 }
 
 // func (srv *KLineService) insertHistoricalKline(kline *Kline) {

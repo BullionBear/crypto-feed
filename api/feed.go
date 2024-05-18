@@ -22,14 +22,45 @@ func NewFeedServer(klineSrv *service.KLineService) *feedServer {
 	}
 }
 
+func (s *feedServer) GetConfig(ctx context.Context, in *emptypb.Empty) (*pb.ConfigResponse, error) {
+	return &pb.ConfigResponse{
+		Symbol: s.klineSrv.Symbol(),
+		Length: s.klineSrv.Length(),
+	}, nil
+}
+
 // GetStatus implements feed.FeedServer
 func (s *feedServer) GetStatus(ctx context.Context, in *emptypb.Empty) (*pb.StatusResponse, error) {
 	// Example response, normally you would query this data from your application logic
 	log.Info("GetStatus get called")
 	defer log.Info("Leave GetStatus")
+	startKline, err := s.klineSrv.Head()
+	if err != nil {
+		return &pb.StatusResponse{
+			Status:    pb.Status_ERROR,
+			Start:     0,
+			End:       0,
+			Timestamp: time.Now().UnixMilli(),
+			Size:      0,
+		}, err
+	}
+	endKline, err := s.klineSrv.Tail()
+	if err != nil {
+		return &pb.StatusResponse{
+			Status:    pb.Status_ERROR,
+			Start:     startKline.OpenTime,
+			End:       0,
+			Timestamp: time.Now().UnixMilli(),
+			Size:      0,
+		}, err
+	}
+	size := s.klineSrv.Size()
 	return &pb.StatusResponse{
-		Status:    "Service is running",
-		Timestamp: time.Now().Unix(),
+		Status:    pb.Status_OK,
+		Start:     startKline.OpenTime,
+		End:       endKline.CloseTime,
+		Timestamp: time.Now().UnixMilli(),
+		Size:      size,
 	}, nil
 }
 
@@ -47,7 +78,8 @@ func (s *feedServer) StreamKline(req *pb.StreamRequest, stream pb.Feed_StreamKli
 		klineCh <- pbKline
 	}
 	defer log.Info("Leave StreamData")
-	s.klineSrv.Subscribe(kline_handler)
+	id := s.klineSrv.Subscribe(kline_handler)
+	defer s.klineSrv.Unsubscribe(id)
 	for kline := range klineCh {
 		response := pb.DataResponse{
 			Kline: kline,

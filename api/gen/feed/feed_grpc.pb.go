@@ -20,6 +20,7 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
+	Feed_GetConfig_FullMethodName   = "/feed.Feed/GetConfig"
 	Feed_GetStatus_FullMethodName   = "/feed.Feed/GetStatus"
 	Feed_StreamKline_FullMethodName = "/feed.Feed/StreamKline"
 )
@@ -28,6 +29,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type FeedClient interface {
+	GetConfig(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*ConfigResponse, error)
 	GetStatus(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*StatusResponse, error)
 	StreamKline(ctx context.Context, in *StreamRequest, opts ...grpc.CallOption) (Feed_StreamKlineClient, error)
 }
@@ -38,6 +40,15 @@ type feedClient struct {
 
 func NewFeedClient(cc grpc.ClientConnInterface) FeedClient {
 	return &feedClient{cc}
+}
+
+func (c *feedClient) GetConfig(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*ConfigResponse, error) {
+	out := new(ConfigResponse)
+	err := c.cc.Invoke(ctx, Feed_GetConfig_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *feedClient) GetStatus(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*StatusResponse, error) {
@@ -85,6 +96,7 @@ func (x *feedStreamKlineClient) Recv() (*DataResponse, error) {
 // All implementations must embed UnimplementedFeedServer
 // for forward compatibility
 type FeedServer interface {
+	GetConfig(context.Context, *empty.Empty) (*ConfigResponse, error)
 	GetStatus(context.Context, *empty.Empty) (*StatusResponse, error)
 	StreamKline(*StreamRequest, Feed_StreamKlineServer) error
 	mustEmbedUnimplementedFeedServer()
@@ -94,6 +106,9 @@ type FeedServer interface {
 type UnimplementedFeedServer struct {
 }
 
+func (UnimplementedFeedServer) GetConfig(context.Context, *empty.Empty) (*ConfigResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetConfig not implemented")
+}
 func (UnimplementedFeedServer) GetStatus(context.Context, *empty.Empty) (*StatusResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetStatus not implemented")
 }
@@ -111,6 +126,24 @@ type UnsafeFeedServer interface {
 
 func RegisterFeedServer(s grpc.ServiceRegistrar, srv FeedServer) {
 	s.RegisterService(&Feed_ServiceDesc, srv)
+}
+
+func _Feed_GetConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(empty.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FeedServer).GetConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Feed_GetConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FeedServer).GetConfig(ctx, req.(*empty.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _Feed_GetStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -159,6 +192,10 @@ var Feed_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "feed.Feed",
 	HandlerType: (*FeedServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetConfig",
+			Handler:    _Feed_GetConfig_Handler,
+		},
 		{
 			MethodName: "GetStatus",
 			Handler:    _Feed_GetStatus_Handler,

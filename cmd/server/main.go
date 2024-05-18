@@ -21,7 +21,7 @@ func main() {
 	feedServer := api.NewFeedServer(klineSrv)
 
 	pb.RegisterFeedServer(s, feedServer)
-	log.Printf("server listening at %v", lis.Addr())
+	log.Infof("server listening at %s", lis.Addr())
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}

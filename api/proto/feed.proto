@@ -21,8 +21,16 @@ message Kline {
     double takerBuyQuoteAssetVolume = 11;
 }
 
+enum Status {
+    OK = 0;
+    ERROR = 1;
+    PENDING = 2;
+}
+
 // The Feed service definition.
 service Feed {
+  rpc GetConfig(google.protobuf.Empty) returns (ConfigResponse);
+
   rpc GetStatus(google.protobuf.Empty) returns (StatusResponse);
 
   rpc StreamKline(StreamRequest) returns (stream DataResponse);
@@ -31,10 +39,16 @@ service Feed {
 }
 
 message StatusResponse {
-  string status = 1;
+  Status status = 1;
   int64 start = 2;
   int64 end = 3;
   int64 timestamp = 4;
+  int64 size = 5;
+}
+
+message ConfigResponse {
+  string symbol = 1;
+  int64 length = 2;
 }
 
 message StreamRequest {
