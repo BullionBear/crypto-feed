@@ -20,7 +20,7 @@ type IndexedNode[T any] struct {
 type IndexLinkedList[T any] struct {
 	head      *IndexedNode[T]
 	tail      *IndexedNode[T]
-	size      int
+	size      int64
 	nodeIndex map[int64]*IndexedNode[T]
 }
 
@@ -161,6 +161,10 @@ func (ls *IndexLinkedList[T]) Get(index int64) (T, error) {
 	}
 	var zero T
 	return zero, errors.New("index does not exist")
+}
+
+func (ls *IndexLinkedList[T]) Size() int64 {
+	return ls.size
 }
 
 func (ls *IndexLinkedList[T]) insertFirstNode(index int64, data T) error {

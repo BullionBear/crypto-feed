@@ -5,6 +5,7 @@ import (
 
 	"github.com/BullionBear/crypto-feed/api"
 	pb "github.com/BullionBear/crypto-feed/api/gen/feed"
+	"github.com/BullionBear/crypto-feed/pkg/service"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
@@ -15,7 +16,10 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 	s := grpc.NewServer()
-	feedServer := api.NewFeedServer()
+	klineSrv := service.NewKLineService("BTCUSDT", 86400)
+	klineSrv.Run()
+	feedServer := api.NewFeedServer(klineSrv)
+
 	pb.RegisterFeedServer(s, feedServer)
 	log.Printf("server listening at %v", lis.Addr())
 	if err := s.Serve(lis); err != nil {

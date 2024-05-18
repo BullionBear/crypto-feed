@@ -7,18 +7,34 @@ option go_package = "./api/gen/feed;feed";
 
 import "google/protobuf/empty.proto";
 
+message Kline {
+    int64 openTime = 1;
+    double open = 2;
+    double high = 3;
+    double low = 4;
+    double close = 5;
+    double volume = 6;
+    int64 closeTime = 7;
+    double quoteAssetVolume = 8;
+    int64 tradeNum = 9;
+    double takerBuyBaseAssetVolume = 10;
+    double takerBuyQuoteAssetVolume = 11;
+}
+
 // The Feed service definition.
 service Feed {
   rpc GetStatus(google.protobuf.Empty) returns (StatusResponse);
 
-  rpc StreamData(StreamRequest) returns (stream DataResponse);
+  rpc StreamKline(StreamRequest) returns (stream DataResponse);
 
-  rpc GetHistoricalData(HistoryRequest) returns (HistoryResponse);
+  // rpc GetHistoricalData(HistoryRequest) returns (HistoryResponse);
 }
 
 message StatusResponse {
   string status = 1;
-  int64 timestamp = 2;
+  int64 start = 2;
+  int64 end = 3;
+  int64 timestamp = 4;
 }
 
 message StreamRequest {
@@ -26,20 +42,5 @@ message StreamRequest {
 }
 
 message DataResponse {
-  string data = 1;
-  int64 timestamp = 2;
-}
-
-message HistoryRequest {
-  int64 from_date = 1;
-  int64 to_date = 2;
-}
-
-message HistoryResponse {
-  repeated DataPoint data_points = 1;
-}
-
-message DataPoint {
-  string data = 1;
-  int64 timestamp = 2;
+    Kline kline = 1;
 }

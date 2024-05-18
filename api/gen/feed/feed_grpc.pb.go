@@ -20,9 +20,8 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Feed_GetStatus_FullMethodName         = "/feed.Feed/GetStatus"
-	Feed_StreamData_FullMethodName        = "/feed.Feed/StreamData"
-	Feed_GetHistoricalData_FullMethodName = "/feed.Feed/GetHistoricalData"
+	Feed_GetStatus_FullMethodName   = "/feed.Feed/GetStatus"
+	Feed_StreamKline_FullMethodName = "/feed.Feed/StreamKline"
 )
 
 // FeedClient is the client API for Feed service.
@@ -30,8 +29,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type FeedClient interface {
 	GetStatus(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*StatusResponse, error)
-	StreamData(ctx context.Context, in *StreamRequest, opts ...grpc.CallOption) (Feed_StreamDataClient, error)
-	GetHistoricalData(ctx context.Context, in *HistoryRequest, opts ...grpc.CallOption) (*HistoryResponse, error)
+	StreamKline(ctx context.Context, in *StreamRequest, opts ...grpc.CallOption) (Feed_StreamKlineClient, error)
 }
 
 type feedClient struct {
@@ -51,12 +49,12 @@ func (c *feedClient) GetStatus(ctx context.Context, in *empty.Empty, opts ...grp
 	return out, nil
 }
 
-func (c *feedClient) StreamData(ctx context.Context, in *StreamRequest, opts ...grpc.CallOption) (Feed_StreamDataClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Feed_ServiceDesc.Streams[0], Feed_StreamData_FullMethodName, opts...)
+func (c *feedClient) StreamKline(ctx context.Context, in *StreamRequest, opts ...grpc.CallOption) (Feed_StreamKlineClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Feed_ServiceDesc.Streams[0], Feed_StreamKline_FullMethodName, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &feedStreamDataClient{stream}
+	x := &feedStreamKlineClient{stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -66,16 +64,16 @@ func (c *feedClient) StreamData(ctx context.Context, in *StreamRequest, opts ...
 	return x, nil
 }
 
-type Feed_StreamDataClient interface {
+type Feed_StreamKlineClient interface {
 	Recv() (*DataResponse, error)
 	grpc.ClientStream
 }
 
-type feedStreamDataClient struct {
+type feedStreamKlineClient struct {
 	grpc.ClientStream
 }
 
-func (x *feedStreamDataClient) Recv() (*DataResponse, error) {
+func (x *feedStreamKlineClient) Recv() (*DataResponse, error) {
 	m := new(DataResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -83,22 +81,12 @@ func (x *feedStreamDataClient) Recv() (*DataResponse, error) {
 	return m, nil
 }
 
-func (c *feedClient) GetHistoricalData(ctx context.Context, in *HistoryRequest, opts ...grpc.CallOption) (*HistoryResponse, error) {
-	out := new(HistoryResponse)
-	err := c.cc.Invoke(ctx, Feed_GetHistoricalData_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // FeedServer is the server API for Feed service.
 // All implementations must embed UnimplementedFeedServer
 // for forward compatibility
 type FeedServer interface {
 	GetStatus(context.Context, *empty.Empty) (*StatusResponse, error)
-	StreamData(*StreamRequest, Feed_StreamDataServer) error
-	GetHistoricalData(context.Context, *HistoryRequest) (*HistoryResponse, error)
+	StreamKline(*StreamRequest, Feed_StreamKlineServer) error
 	mustEmbedUnimplementedFeedServer()
 }
 
@@ -109,11 +97,8 @@ type UnimplementedFeedServer struct {
 func (UnimplementedFeedServer) GetStatus(context.Context, *empty.Empty) (*StatusResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetStatus not implemented")
 }
-func (UnimplementedFeedServer) StreamData(*StreamRequest, Feed_StreamDataServer) error {
-	return status.Errorf(codes.Unimplemented, "method StreamData not implemented")
-}
-func (UnimplementedFeedServer) GetHistoricalData(context.Context, *HistoryRequest) (*HistoryResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetHistoricalData not implemented")
+func (UnimplementedFeedServer) StreamKline(*StreamRequest, Feed_StreamKlineServer) error {
+	return status.Errorf(codes.Unimplemented, "method StreamKline not implemented")
 }
 func (UnimplementedFeedServer) mustEmbedUnimplementedFeedServer() {}
 
@@ -146,43 +131,25 @@ func _Feed_GetStatus_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Feed_StreamData_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _Feed_StreamKline_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(StreamRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(FeedServer).StreamData(m, &feedStreamDataServer{stream})
+	return srv.(FeedServer).StreamKline(m, &feedStreamKlineServer{stream})
 }
 
-type Feed_StreamDataServer interface {
+type Feed_StreamKlineServer interface {
 	Send(*DataResponse) error
 	grpc.ServerStream
 }
 
-type feedStreamDataServer struct {
+type feedStreamKlineServer struct {
 	grpc.ServerStream
 }
 
-func (x *feedStreamDataServer) Send(m *DataResponse) error {
+func (x *feedStreamKlineServer) Send(m *DataResponse) error {
 	return x.ServerStream.SendMsg(m)
-}
-
-func _Feed_GetHistoricalData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(HistoryRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(FeedServer).GetHistoricalData(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Feed_GetHistoricalData_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FeedServer).GetHistoricalData(ctx, req.(*HistoryRequest))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 // Feed_ServiceDesc is the grpc.ServiceDesc for Feed service.
@@ -196,15 +163,11 @@ var Feed_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "GetStatus",
 			Handler:    _Feed_GetStatus_Handler,
 		},
-		{
-			MethodName: "GetHistoricalData",
-			Handler:    _Feed_GetHistoricalData_Handler,
-		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "StreamData",
-			Handler:       _Feed_StreamData_Handler,
+			StreamName:    "StreamKline",
+			Handler:       _Feed_StreamKline_Handler,
 			ServerStreams: true,
 		},
 	},
