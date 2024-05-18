@@ -170,13 +170,27 @@ func (srv *KLineService) requestCurrentKline() {
 func (srv *KLineService) publishKline(setupCh chan<- struct{}) {
 	for range srv.eventCh {
 		if !srv.isSetup {
+			currentTime, err := srv.container.HeadKey(0) // Initialize running Key
+			if err != nil {
+				log.Warnf("unable to retrieve currentTime")
+			}
+			srv.currentTime = currentTime
 			srv.isSetup = true
 			setupCh <- struct{}{}
 		}
-		kline, _ := srv.container.Tail()
-		for _, subscriber := range srv.subscribers {
-			subscriber(&kline)
+		for {
+			nextTime, err := srv.container.Next(srv.currentTime)
+			if err != nil {
+				break
+			}
+			kline, _ := srv.container.Get(srv.currentTime)
+			for _, subscriber := range srv.subscribers {
+				subscriber(&kline)
+			}
+
+			srv.currentTime = nextTime
 		}
+
 	}
 }
 
