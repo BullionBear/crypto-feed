@@ -33,7 +33,9 @@ service Feed {
 
   rpc GetStatus(google.protobuf.Empty) returns (StatusResponse);
 
-  rpc StreamKline(StreamRequest) returns (stream DataResponse);
+  rpc GetSubscriber(google.protobuf.Empty) returns (SubscriberResponse);
+
+  rpc StreamKline(google.protobuf.Empty) returns (stream KlineResponse);
 
   // rpc GetHistoricalData(HistoryRequest) returns (HistoryResponse);
 }
@@ -51,10 +53,10 @@ message ConfigResponse {
   int64 length = 2;
 }
 
-message StreamRequest {
-  int32 stream_id = 1;
+message SubscriberResponse{
+  repeated int64 subscribers = 1;
 }
 
-message DataResponse {
+message KlineResponse {
     Kline kline = 1;
 }

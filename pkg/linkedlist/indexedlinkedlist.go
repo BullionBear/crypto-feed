@@ -39,12 +39,42 @@ func (ls *IndexLinkedList[T]) Head() (T, error) {
 	return ls.head.data, nil
 }
 
+func (ls *IndexLinkedList[T]) HeadKey(step int) (int64, error) {
+	ptr := ls.head
+	if ptr == nil {
+		return 0, errPtrIsNil
+	}
+	for i := 0; i < step; i++ {
+		if ptr != nil && ptr.next != nil {
+			ptr = ptr.next
+		} else {
+			return 0, errPtrIsNil
+		}
+	}
+	return ptr.index, nil
+}
+
 func (ls *IndexLinkedList[T]) Tail() (T, error) {
 	if ls.size == 0 {
 		var zero T
 		return zero, errPtrIsNil
 	}
 	return ls.tail.data, nil
+}
+
+func (ls *IndexLinkedList[T]) TailKey(step int) (int64, error) {
+	ptr := ls.tail
+	if ptr == nil {
+		return 0, errPtrIsNil
+	}
+	for i := 0; i < step; i++ {
+		if ptr != nil && ptr.prev != nil {
+			ptr = ptr.prev
+		} else {
+			return 0, errPtrIsNil
+		}
+	}
+	return ptr.index, nil
 }
 
 func (ls *IndexLinkedList[T]) PushBack(index int64, data T) error {
@@ -164,6 +194,28 @@ func (ls *IndexLinkedList[T]) Get(index int64) (T, error) {
 
 func (ls *IndexLinkedList[T]) Size() int64 {
 	return ls.size
+}
+
+func (ls *IndexLinkedList[T]) Next(index int64) (int64, error) {
+	node, exists := ls.nodeIndex[index]
+	if !exists {
+		return 0, errIndexNotExist
+	}
+	if node.next != nil {
+		return node.next.index, nil
+	}
+	return 0, errPtrIsNil
+}
+
+func (ls *IndexLinkedList[T]) Prev(index int64) (int64, error) {
+	node, exists := ls.nodeIndex[index]
+	if !exists {
+		return 0, errIndexNotExist
+	}
+	if node.prev != nil {
+		return node.prev.index, nil
+	}
+	return 0, errPtrIsNil
 }
 
 func (ls *IndexLinkedList[T]) insertFirstNode(index int64, data T) error {

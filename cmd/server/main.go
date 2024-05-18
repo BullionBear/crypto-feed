@@ -17,7 +17,7 @@ func main() {
 	}
 	s := grpc.NewServer()
 	klineSrv := service.NewKLineService("BTCUSDT", 86400)
-	klineSrv.Run()
+	go klineSrv.Run()
 	feedServer := api.NewFeedServer(klineSrv)
 
 	pb.RegisterFeedServer(s, feedServer)

@@ -64,16 +64,20 @@ func (s *feedServer) GetStatus(ctx context.Context, in *emptypb.Empty) (*pb.Stat
 	}, nil
 }
 
+func (s *feedServer) GetSubscriber(context.Context, *emptypb.Empty) (*pb.SubscriberResponse, error) {
+	return &pb.SubscriberResponse{
+		Subscribers: s.klineSrv.ListSubsriber(),
+	}, nil
+}
+
 // StreamData implements feed.FeedServer
-func (s *feedServer) StreamKline(req *pb.StreamRequest, stream pb.Feed_StreamKlineServer) error {
+func (s *feedServer) StreamKline(in *emptypb.Empty, stream pb.Feed_StreamKlineServer) error {
 	log.Info("StreamKline get called")
 	defer log.Info("Leave StreamKline")
 	klineCh := make(chan *pb.Kline)
-	log.WithFields(log.Fields{
-		"streamID": req.StreamId,
-	}).Info("StreamData is subscribed")
 
 	kline_handler := func(srvKline *service.Kline) {
+		log.Infof("Service Kline: %+v", srvKline)
 		pbKline := convertToPbKline(srvKline)
 		klineCh <- pbKline
 	}
@@ -81,10 +85,13 @@ func (s *feedServer) StreamKline(req *pb.StreamRequest, stream pb.Feed_StreamKli
 	id := s.klineSrv.Subscribe(kline_handler)
 	defer s.klineSrv.Unsubscribe(id)
 	for kline := range klineCh {
-		response := pb.DataResponse{
+		response := pb.KlineResponse{
 			Kline: kline,
 		}
-		stream.Send(&response)
+		if err := stream.Send(&response); err != nil {
+			log.Warnf("Error sending data to client: %s", err.Error())
+			break // Exit the loop if we fail to send data
+		}
 	}
 	return nil
 }
