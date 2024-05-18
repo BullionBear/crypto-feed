@@ -104,7 +104,6 @@ func (ls *IndexLinkedList[T]) PopBack() (T, error) {
 		ls.tail.next = nil
 	}
 
-	// Decrease size
 	ls.size--
 
 	return data, nil
@@ -160,7 +159,7 @@ func (ls *IndexLinkedList[T]) Get(index int64) (T, error) {
 		return node.data, nil
 	}
 	var zero T
-	return zero, errors.New("index does not exist")
+	return zero, errIndexNotExist
 }
 
 func (ls *IndexLinkedList[T]) Size() int64 {

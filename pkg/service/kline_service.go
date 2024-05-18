@@ -94,26 +94,28 @@ func (srv *KLineService) Unsubscribe(subscriberID int64) error {
 func (srv *KLineService) requestCurrentKline() {
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
-	for {
-		select {
-		case <-ticker.C:
-			// Perform the request
-			req := srv.client.NewKlinesService()
-			req.Symbol(strings.ToUpper(srv.symbol))
-			req.Limit(5) // The latest recent 5
-			req.Interval("1s")
-			bKlines, err := req.Do(context.Background())
+
+	for range ticker.C {
+		// Perform the request
+		req := srv.client.NewKlinesService()
+		req.Symbol(strings.ToUpper(srv.symbol))
+		req.Limit(5) // The latest recent 5
+		req.Interval("1s")
+		bKlines, err := req.Do(context.Background())
+		if err != nil {
+			log.Errorf("Fail to retrieve kline: %+v", err)
+			continue
+		}
+
+		for _, bKline := range bKlines {
+			kline, err := convertFromKline(bKline)
 			if err != nil {
-				log.Errorf("Fail retrieve kline: %+v", err)
+				log.Errorf("Fail to convert kline: %+v", bKline)
+				continue
 			}
-			for _, bKline := range bKlines {
-				kline, err := convertFromKline(bKline)
-				if err != nil {
-					log.Errorf("Fail convert kline: %+v", bKline)
-				}
-				if err := srv.insertLastestKline(kline); err != nil {
-					srv.controlCh <- struct{}{}
-				}
+			if err := srv.insertLastestKline(kline); err == nil {
+				srv.controlCh <- struct{}{}
+				continue
 			}
 		}
 	}
