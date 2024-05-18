@@ -53,7 +53,7 @@ func (srv *KLineService) Run() error {
 	go srv.requestHistoricalKline(setupCh)
 	<-setupCh
 	log.Info("Request target historical data")
-	// go srv.popHistoricalKline()
+	go srv.popHistoricalKline()
 	return nil
 }
 
@@ -198,13 +198,23 @@ func (srv *KLineService) requestHistoricalKline(setupCh chan<- struct{}) {
 	setupCh <- struct{}{}
 }
 
-// func (srv *KLineService) removeOldestKline(ctx context.Context) {
-//
-// }
-//
-// func (srv *KLineService) wsKlineHandler(event *binance.WsKlineEvent) {
-//
-// }
+func (srv *KLineService) popHistoricalKline() {
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		nPop := srv.Size() - srv.length
+		if nPop <= 0 {
+			continue
+		}
+		for i := 0; i < int(nPop); i++ {
+			_, err := srv.container.PopFront()
+			if err != nil {
+				log.Errorf("fail to pop kline %s", err.Error())
+			}
+		}
+	}
+}
 
 func (srv *KLineService) pushBack(kline *Kline) error {
 	srv.mutex.Lock()
@@ -219,11 +229,3 @@ func (srv *KLineService) pushFront(kline *Kline) error {
 	closeTime := kline.OpenTime
 	return srv.container.PushFront(closeTime, *kline)
 }
-
-// func (srv *KLineService) insertHistoricalKline(kline *Kline) {
-//
-// }
-//
-// func (srv *KLineService) handleError(err error) {
-// 	log.Errorf("Error: %s", err.Error())
-// }
