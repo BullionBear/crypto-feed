@@ -209,14 +209,14 @@ func (srv *KLineService) requestHistoricalKline(setupCh chan<- struct{}) {
 func (srv *KLineService) pushBack(kline *Kline) error {
 	srv.mutex.Lock()
 	defer srv.mutex.Unlock()
-	closeTime := kline.CloseTime
+	closeTime := kline.OpenTime
 	return srv.container.PushBack(closeTime, *kline)
 }
 
 func (srv *KLineService) pushFront(kline *Kline) error {
 	srv.mutex.Lock()
 	defer srv.mutex.Unlock()
-	closeTime := kline.CloseTime
+	closeTime := kline.OpenTime
 	return srv.container.PushFront(closeTime, *kline)
 }
 

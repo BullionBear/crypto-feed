@@ -77,7 +77,6 @@ func (s *feedServer) StreamKline(in *emptypb.Empty, stream pb.Feed_StreamKlineSe
 	klineCh := make(chan *pb.Kline)
 
 	kline_handler := func(srvKline *service.Kline) {
-		log.Infof("Service Kline: %+v", srvKline)
 		pbKline := convertToPbKline(srvKline)
 		klineCh <- pbKline
 	}
