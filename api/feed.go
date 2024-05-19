@@ -55,8 +55,10 @@ func (s *feedServer) GetStatus(ctx context.Context, in *emptypb.Empty) (*pb.Stat
 		}, err
 	}
 	size := s.klineSrv.Size()
+	status := s.klineSrv.Status()
+
 	return &pb.StatusResponse{
-		Status:    pb.Status_OK,
+		Status:    convertToStatus(status),
 		Start:     startKline.OpenTime,
 		End:       endKline.CloseTime,
 		Timestamp: time.Now().UnixMilli(),
@@ -108,5 +110,20 @@ func convertToPbKline(srvKline *service.Kline) *pb.Kline {
 		TradeNum:                 srvKline.TradeNum,
 		TakerBuyBaseAssetVolume:  srvKline.TakerBuyBaseAssetVolume,
 		TakerBuyQuoteAssetVolume: srvKline.TakerBuyQuoteAssetVolume,
+	}
+}
+
+func convertToStatus(status service.Status) pb.Status {
+	switch status {
+	case service.StatusCreated:
+		return pb.Status_CREATED
+	case service.StatusInitializing:
+		return pb.Status_INITIALIZING
+	case service.StatusRunning:
+		return pb.Status_OK
+	case service.StatusError:
+		return pb.Status_ERROR
+	default:
+		return pb.Status_UNKNOWN
 	}
 }

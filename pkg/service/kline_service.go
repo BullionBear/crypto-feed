@@ -23,6 +23,8 @@ type KLineService struct {
 	subscribers map[int64]func(*Kline)
 	// Dynamic varaible
 	currentTime int64
+	status      Status
+	errCh       chan struct{}
 	// pipeline control
 	mutex   sync.Mutex
 	eventCh chan struct{}
@@ -39,12 +41,15 @@ func NewKLineService(symbol string, length int64) *KLineService {
 		id:          0,
 		subscribers: make(map[int64]func(*Kline)),
 		currentTime: 0,
+		status:      StatusCreated,
+		errCh:       make(chan struct{}),
 		eventCh:     make(chan struct{}, 1),
 		isSetup:     false,
 	}
 }
 
 func (srv *KLineService) Run() error {
+	srv.status = StatusInitializing
 	setupCh := make(chan struct{})
 	go srv.publishKline(setupCh)
 	go srv.requestCurrentKline()
@@ -54,6 +59,14 @@ func (srv *KLineService) Run() error {
 	<-setupCh
 	log.Info("Finish retrieve historical klines")
 	go srv.popHistoricalKline()
+	go srv.subscribeCurrentKline()
+	srv.status = StatusRunning
+	go func() {
+		for range srv.errCh {
+			srv.status = StatusError
+			log.Errorf("some goroutine dead, need to check")
+		}
+	}()
 	return nil
 }
 
@@ -77,43 +90,14 @@ func (srv *KLineService) Size() int64 {
 	return srv.container.Size()
 }
 
+func (srv *KLineService) Status() Status {
+	return srv.status
+}
+
 func (srv *KLineService) Subscribe(handler func(event *Kline)) int64 {
 	id := srv.id
 	srv.subscribers[id] = handler
 	srv.id++
-	return id
-}
-
-func (srv *KLineService) SubscribeFromHead(handler func(event *Kline)) int64 {
-	middleCh := make(chan *Kline, 1024)
-	isFirst := true
-	firstCh := make(chan int64)
-	var middleHandler = func(event *Kline) {
-		middleCh <- event
-		if isFirst {
-			isFirst = false
-			firstCh <- event.CloseTime // Get Key
-			close(firstCh)
-		}
-	}
-	id := srv.id
-	srv.Subscribe(middleHandler)
-	go func() {
-		end := <-firstCh
-		start, err := srv.container.HeadKey(2)
-		if err != nil {
-			for key := start; key != end; key, _ = srv.container.Next(key) {
-				kline, err := srv.container.Get(key)
-				if err != nil {
-					log.Errorf("Fail retrieve kline: %s", err.Error())
-				}
-				handler(&kline)
-			}
-		}
-		for kline := range middleCh {
-			handler(kline)
-		}
-	}()
 	return id
 }
 
@@ -128,6 +112,32 @@ func (srv *KLineService) ListSubsriber() []int64 {
 		result = append(result, key)
 	}
 	return result
+}
+
+func (srv *KLineService) subscribeCurrentKline() {
+	log.Info("start subscribe current kline")
+	var wsKlineHandler = func(event *binance.WsKlineEvent) {
+		kline, err := convertFromWsKline(&event.Kline)
+		if err != nil {
+			log.Errorf("fail to convert wsKline %s", err.Error())
+		}
+		srv.pushBack(kline)
+	}
+	var errHandler = func(err error) {
+		log.Errorf("handle error of wsKline %s", err.Error())
+	}
+	reconnectCh := make(chan struct{}, 1)
+	reconnectCh <- struct{}{}
+	for range reconnectCh {
+		doneC, _, err := binance.WsKlineServe(srv.symbol, "1s", wsKlineHandler, errHandler)
+		if err != nil {
+			log.Errorf("fail to create ws channel: %s", err.Error())
+		}
+		time.Sleep(5 * time.Second)
+		<-doneC
+		reconnectCh <- struct{}{}
+	}
+	srv.errCh <- struct{}{}
 }
 
 func (srv *KLineService) requestCurrentKline() {
@@ -167,6 +177,7 @@ func (srv *KLineService) requestCurrentKline() {
 			}
 		}
 	}
+	srv.errCh <- struct{}{}
 }
 
 func (srv *KLineService) publishKline(setupCh chan<- struct{}) {
@@ -192,8 +203,8 @@ func (srv *KLineService) publishKline(setupCh chan<- struct{}) {
 
 			srv.currentTime = nextTime
 		}
-
 	}
+	srv.errCh <- struct{}{}
 }
 
 func (srv *KLineService) requestHistoricalKline(setupCh chan<- struct{}) {
@@ -210,8 +221,8 @@ func (srv *KLineService) requestHistoricalKline(setupCh chan<- struct{}) {
 			log.Errorf("fail get head kline %s", err.Error())
 		}
 		endTime := startKline.OpenTime
-		startTime := endTime - int64(limit*1000) // back 500 seconds
-		ksrv.StartTime(startTime)
+		startTime := endTime - int64(limit*1000) // rollback 500 seconds
+		ksrv.StartTime(startTime - 1)
 		ksrv.EndTime(endTime)
 		bklines, err := ksrv.Do(context.Background())
 		if err != nil {
@@ -248,6 +259,7 @@ func (srv *KLineService) popHistoricalKline() {
 			}
 		}
 	}
+	srv.errCh <- struct{}{}
 }
 
 func (srv *KLineService) pushBack(kline *Kline) error {

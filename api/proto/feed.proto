@@ -22,9 +22,11 @@ message Kline {
 }
 
 enum Status {
-    OK = 0;
-    ERROR = 1;
-    PENDING = 2;
+    CREATED = 0;
+    OK = 1;
+    INITIALIZING = 2;
+    ERROR = 3;
+    UNKNOWN = 4;
 }
 
 // The Feed service definition.

@@ -18,5 +18,3 @@ clean:
 	rm -rf bin/*
 	rm -rf api/gen
     
-
-# .PHONY: clean, build

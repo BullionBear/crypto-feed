@@ -6,6 +6,15 @@ import (
 	"github.com/adshao/go-binance/v2"
 )
 
+type Status string
+
+var (
+	StatusCreated      = Status("created")
+	StatusInitializing = Status("initializing")
+	StatusRunning      = Status("running")
+	StatusError        = Status("error")
+)
+
 type Kline struct {
 	OpenTime                 int64   `json:"openTime"`
 	Open                     float64 `json:"open"`
