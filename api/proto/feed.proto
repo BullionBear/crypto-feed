@@ -39,7 +39,13 @@ service Feed {
 
   rpc SubscribeKline(google.protobuf.Empty) returns (stream KlineResponse);
 
+  rpc ReadHistoricalKline(ReadKlineRequest) returns (stream KlineResponse);
   // rpc GetHistoricalData(HistoryRequest) returns (HistoryResponse);
+}
+
+message ReadKlineRequest {
+  int64 start = 1;
+  int64 end = 2;
 }
 
 message StatusResponse {

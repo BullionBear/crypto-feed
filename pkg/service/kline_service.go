@@ -114,6 +114,36 @@ func (srv *KLineService) ListSubsriber() []int64 {
 	return result
 }
 
+func (srv *KLineService) Query(start int64, end int64, handler func(event *Kline)) error {
+	key := start
+	for {
+		kline, err := srv.container.Get(key)
+		if err != nil {
+			log.Errorf("Failed to query key %d: %s", key, err.Error())
+			return err
+		}
+		handler(&kline)
+
+		if key == end {
+			break
+		}
+
+		if key, err = srv.container.Next(key); err != nil {
+			log.Errorf("Failed to get next key after %d: %s", key, err.Error())
+			return err
+		}
+	}
+	return nil
+}
+
+func (srv *KLineService) Next(key int64) (int64, error) {
+	next, err := srv.container.Next(key)
+	if err != nil {
+		return 0, err
+	}
+	return next, nil
+}
+
 func (srv *KLineService) subscribeCurrentKline() {
 	log.Info("start subscribe current kline")
 	var wsKlineHandler = func(event *binance.WsKlineEvent) {

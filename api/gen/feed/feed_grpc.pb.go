@@ -20,10 +20,11 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Feed_GetConfig_FullMethodName      = "/feed.Feed/GetConfig"
-	Feed_GetStatus_FullMethodName      = "/feed.Feed/GetStatus"
-	Feed_GetSubscriber_FullMethodName  = "/feed.Feed/GetSubscriber"
-	Feed_SubscribeKline_FullMethodName = "/feed.Feed/SubscribeKline"
+	Feed_GetConfig_FullMethodName           = "/feed.Feed/GetConfig"
+	Feed_GetStatus_FullMethodName           = "/feed.Feed/GetStatus"
+	Feed_GetSubscriber_FullMethodName       = "/feed.Feed/GetSubscriber"
+	Feed_SubscribeKline_FullMethodName      = "/feed.Feed/SubscribeKline"
+	Feed_ReadHistoricalKline_FullMethodName = "/feed.Feed/ReadHistoricalKline"
 )
 
 // FeedClient is the client API for Feed service.
@@ -34,6 +35,7 @@ type FeedClient interface {
 	GetStatus(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*StatusResponse, error)
 	GetSubscriber(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*SubscriberResponse, error)
 	SubscribeKline(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (Feed_SubscribeKlineClient, error)
+	ReadHistoricalKline(ctx context.Context, in *ReadKlineRequest, opts ...grpc.CallOption) (Feed_ReadHistoricalKlineClient, error)
 }
 
 type feedClient struct {
@@ -103,6 +105,38 @@ func (x *feedSubscribeKlineClient) Recv() (*KlineResponse, error) {
 	return m, nil
 }
 
+func (c *feedClient) ReadHistoricalKline(ctx context.Context, in *ReadKlineRequest, opts ...grpc.CallOption) (Feed_ReadHistoricalKlineClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Feed_ServiceDesc.Streams[1], Feed_ReadHistoricalKline_FullMethodName, opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &feedReadHistoricalKlineClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type Feed_ReadHistoricalKlineClient interface {
+	Recv() (*KlineResponse, error)
+	grpc.ClientStream
+}
+
+type feedReadHistoricalKlineClient struct {
+	grpc.ClientStream
+}
+
+func (x *feedReadHistoricalKlineClient) Recv() (*KlineResponse, error) {
+	m := new(KlineResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // FeedServer is the server API for Feed service.
 // All implementations must embed UnimplementedFeedServer
 // for forward compatibility
@@ -111,6 +145,7 @@ type FeedServer interface {
 	GetStatus(context.Context, *empty.Empty) (*StatusResponse, error)
 	GetSubscriber(context.Context, *empty.Empty) (*SubscriberResponse, error)
 	SubscribeKline(*empty.Empty, Feed_SubscribeKlineServer) error
+	ReadHistoricalKline(*ReadKlineRequest, Feed_ReadHistoricalKlineServer) error
 	mustEmbedUnimplementedFeedServer()
 }
 
@@ -129,6 +164,9 @@ func (UnimplementedFeedServer) GetSubscriber(context.Context, *empty.Empty) (*Su
 }
 func (UnimplementedFeedServer) SubscribeKline(*empty.Empty, Feed_SubscribeKlineServer) error {
 	return status.Errorf(codes.Unimplemented, "method SubscribeKline not implemented")
+}
+func (UnimplementedFeedServer) ReadHistoricalKline(*ReadKlineRequest, Feed_ReadHistoricalKlineServer) error {
+	return status.Errorf(codes.Unimplemented, "method ReadHistoricalKline not implemented")
 }
 func (UnimplementedFeedServer) mustEmbedUnimplementedFeedServer() {}
 
@@ -218,6 +256,27 @@ func (x *feedSubscribeKlineServer) Send(m *KlineResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
+func _Feed_ReadHistoricalKline_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ReadKlineRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(FeedServer).ReadHistoricalKline(m, &feedReadHistoricalKlineServer{stream})
+}
+
+type Feed_ReadHistoricalKlineServer interface {
+	Send(*KlineResponse) error
+	grpc.ServerStream
+}
+
+type feedReadHistoricalKlineServer struct {
+	grpc.ServerStream
+}
+
+func (x *feedReadHistoricalKlineServer) Send(m *KlineResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 // Feed_ServiceDesc is the grpc.ServiceDesc for Feed service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -242,6 +301,11 @@ var Feed_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "SubscribeKline",
 			Handler:       _Feed_SubscribeKline_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "ReadHistoricalKline",
+			Handler:       _Feed_ReadHistoricalKline_Handler,
 			ServerStreams: true,
 		},
 	},

@@ -74,15 +74,15 @@ func (s *feedServer) GetSubscriber(context.Context, *emptypb.Empty) (*pb.Subscri
 
 // StreamData implements feed.FeedServer
 func (s *feedServer) SubscribeKline(in *emptypb.Empty, stream pb.Feed_SubscribeKlineServer) error {
-	log.Info("StreamKline get called")
-	defer log.Info("Leave StreamKline")
+	log.Info("SubscribeKline get called")
+	defer log.Info("Leave SubscribeKline")
 	klineCh := make(chan *pb.Kline)
 
 	kline_handler := func(srvKline *service.Kline) {
 		pbKline := convertToPbKline(srvKline)
 		klineCh <- pbKline
 	}
-	defer log.Info("Leave StreamData")
+
 	id := s.klineSrv.Subscribe(kline_handler)
 	defer s.klineSrv.Unsubscribe(id)
 	for kline := range klineCh {
@@ -95,6 +95,18 @@ func (s *feedServer) SubscribeKline(in *emptypb.Empty, stream pb.Feed_SubscribeK
 		}
 	}
 	return nil
+}
+
+func (s *feedServer) ReadHistoricalKline(request *pb.ReadKlineRequest, stream pb.Feed_ReadHistoricalKlineServer) error {
+	start := int64(request.Start) / 1000 * 1000
+	end := int64(request.End) / 1000 * 1000
+	kline_handler := func(srvKline *service.Kline) {
+		pbKline := convertToPbKline(srvKline)
+		stream.Send(&pb.KlineResponse{
+			Kline: pbKline,
+		})
+	}
+	return s.klineSrv.Query(start, end, kline_handler)
 }
 
 func convertToPbKline(srvKline *service.Kline) *pb.Kline {
