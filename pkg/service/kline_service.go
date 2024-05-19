@@ -52,7 +52,7 @@ func (srv *KLineService) Run() error {
 	log.Info("Received First Kline")
 	go srv.requestHistoricalKline(setupCh)
 	<-setupCh
-	log.Info("Request target historical data")
+	log.Info("Finish retrieve historical klines")
 	go srv.popHistoricalKline()
 	return nil
 }
@@ -81,6 +81,39 @@ func (srv *KLineService) Subscribe(handler func(event *Kline)) int64 {
 	id := srv.id
 	srv.subscribers[id] = handler
 	srv.id++
+	return id
+}
+
+func (srv *KLineService) SubscribeFromHead(handler func(event *Kline)) int64 {
+	middleCh := make(chan *Kline, 1024)
+	isFirst := true
+	firstCh := make(chan int64)
+	var middleHandler = func(event *Kline) {
+		middleCh <- event
+		if isFirst {
+			isFirst = false
+			firstCh <- event.CloseTime // Get Key
+			close(firstCh)
+		}
+	}
+	id := srv.id
+	srv.Subscribe(middleHandler)
+	go func() {
+		end := <-firstCh
+		start, err := srv.container.HeadKey(2)
+		if err != nil {
+			for key := start; key != end; key, _ = srv.container.Next(key) {
+				kline, err := srv.container.Get(key)
+				if err != nil {
+					log.Errorf("Fail retrieve kline: %s", err.Error())
+				}
+				handler(&kline)
+			}
+		}
+		for kline := range middleCh {
+			handler(kline)
+		}
+	}()
 	return id
 }
 
@@ -164,6 +197,7 @@ func (srv *KLineService) publishKline(setupCh chan<- struct{}) {
 }
 
 func (srv *KLineService) requestHistoricalKline(setupCh chan<- struct{}) {
+
 	ksrv := srv.client.NewKlinesService()
 	limit := 500
 	ksrv.Symbol(strings.ToUpper(srv.symbol))

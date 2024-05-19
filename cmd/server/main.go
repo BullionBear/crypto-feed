@@ -34,7 +34,7 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 	s := grpc.NewServer()
-	klineSrv := service.NewKLineService("BTCUSDT", 86400)
+	klineSrv := service.NewKLineService("BTCUSDT", 30*86400)
 	go klineSrv.Run()
 	feedServer := api.NewFeedServer(klineSrv)
 
