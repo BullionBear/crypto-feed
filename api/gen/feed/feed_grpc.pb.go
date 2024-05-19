@@ -20,10 +20,10 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Feed_GetConfig_FullMethodName     = "/feed.Feed/GetConfig"
-	Feed_GetStatus_FullMethodName     = "/feed.Feed/GetStatus"
-	Feed_GetSubscriber_FullMethodName = "/feed.Feed/GetSubscriber"
-	Feed_StreamKline_FullMethodName   = "/feed.Feed/StreamKline"
+	Feed_GetConfig_FullMethodName      = "/feed.Feed/GetConfig"
+	Feed_GetStatus_FullMethodName      = "/feed.Feed/GetStatus"
+	Feed_GetSubscriber_FullMethodName  = "/feed.Feed/GetSubscriber"
+	Feed_SubscribeKline_FullMethodName = "/feed.Feed/SubscribeKline"
 )
 
 // FeedClient is the client API for Feed service.
@@ -33,7 +33,7 @@ type FeedClient interface {
 	GetConfig(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*ConfigResponse, error)
 	GetStatus(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*StatusResponse, error)
 	GetSubscriber(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*SubscriberResponse, error)
-	StreamKline(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (Feed_StreamKlineClient, error)
+	SubscribeKline(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (Feed_SubscribeKlineClient, error)
 }
 
 type feedClient struct {
@@ -71,12 +71,12 @@ func (c *feedClient) GetSubscriber(ctx context.Context, in *empty.Empty, opts ..
 	return out, nil
 }
 
-func (c *feedClient) StreamKline(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (Feed_StreamKlineClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Feed_ServiceDesc.Streams[0], Feed_StreamKline_FullMethodName, opts...)
+func (c *feedClient) SubscribeKline(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (Feed_SubscribeKlineClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Feed_ServiceDesc.Streams[0], Feed_SubscribeKline_FullMethodName, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &feedStreamKlineClient{stream}
+	x := &feedSubscribeKlineClient{stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -86,16 +86,16 @@ func (c *feedClient) StreamKline(ctx context.Context, in *empty.Empty, opts ...g
 	return x, nil
 }
 
-type Feed_StreamKlineClient interface {
+type Feed_SubscribeKlineClient interface {
 	Recv() (*KlineResponse, error)
 	grpc.ClientStream
 }
 
-type feedStreamKlineClient struct {
+type feedSubscribeKlineClient struct {
 	grpc.ClientStream
 }
 
-func (x *feedStreamKlineClient) Recv() (*KlineResponse, error) {
+func (x *feedSubscribeKlineClient) Recv() (*KlineResponse, error) {
 	m := new(KlineResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -110,7 +110,7 @@ type FeedServer interface {
 	GetConfig(context.Context, *empty.Empty) (*ConfigResponse, error)
 	GetStatus(context.Context, *empty.Empty) (*StatusResponse, error)
 	GetSubscriber(context.Context, *empty.Empty) (*SubscriberResponse, error)
-	StreamKline(*empty.Empty, Feed_StreamKlineServer) error
+	SubscribeKline(*empty.Empty, Feed_SubscribeKlineServer) error
 	mustEmbedUnimplementedFeedServer()
 }
 
@@ -127,8 +127,8 @@ func (UnimplementedFeedServer) GetStatus(context.Context, *empty.Empty) (*Status
 func (UnimplementedFeedServer) GetSubscriber(context.Context, *empty.Empty) (*SubscriberResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSubscriber not implemented")
 }
-func (UnimplementedFeedServer) StreamKline(*empty.Empty, Feed_StreamKlineServer) error {
-	return status.Errorf(codes.Unimplemented, "method StreamKline not implemented")
+func (UnimplementedFeedServer) SubscribeKline(*empty.Empty, Feed_SubscribeKlineServer) error {
+	return status.Errorf(codes.Unimplemented, "method SubscribeKline not implemented")
 }
 func (UnimplementedFeedServer) mustEmbedUnimplementedFeedServer() {}
 
@@ -197,24 +197,24 @@ func _Feed_GetSubscriber_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Feed_StreamKline_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _Feed_SubscribeKline_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(empty.Empty)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(FeedServer).StreamKline(m, &feedStreamKlineServer{stream})
+	return srv.(FeedServer).SubscribeKline(m, &feedSubscribeKlineServer{stream})
 }
 
-type Feed_StreamKlineServer interface {
+type Feed_SubscribeKlineServer interface {
 	Send(*KlineResponse) error
 	grpc.ServerStream
 }
 
-type feedStreamKlineServer struct {
+type feedSubscribeKlineServer struct {
 	grpc.ServerStream
 }
 
-func (x *feedStreamKlineServer) Send(m *KlineResponse) error {
+func (x *feedSubscribeKlineServer) Send(m *KlineResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
@@ -240,8 +240,8 @@ var Feed_ServiceDesc = grpc.ServiceDesc{
 	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "StreamKline",
-			Handler:       _Feed_StreamKline_Handler,
+			StreamName:    "SubscribeKline",
+			Handler:       _Feed_SubscribeKline_Handler,
 			ServerStreams: true,
 		},
 	},

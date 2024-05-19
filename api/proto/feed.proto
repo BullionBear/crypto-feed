@@ -37,7 +37,7 @@ service Feed {
 
   rpc GetSubscriber(google.protobuf.Empty) returns (SubscriberResponse);
 
-  rpc StreamKline(google.protobuf.Empty) returns (stream KlineResponse);
+  rpc SubscribeKline(google.protobuf.Empty) returns (stream KlineResponse);
 
   // rpc GetHistoricalData(HistoryRequest) returns (HistoryResponse);
 }

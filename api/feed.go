@@ -73,7 +73,7 @@ func (s *feedServer) GetSubscriber(context.Context, *emptypb.Empty) (*pb.Subscri
 }
 
 // StreamData implements feed.FeedServer
-func (s *feedServer) StreamKline(in *emptypb.Empty, stream pb.Feed_StreamKlineServer) error {
+func (s *feedServer) SubscribeKline(in *emptypb.Empty, stream pb.Feed_SubscribeKlineServer) error {
 	log.Info("StreamKline get called")
 	defer log.Info("Leave StreamKline")
 	klineCh := make(chan *pb.Kline)
