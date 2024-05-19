@@ -39,7 +39,7 @@ WORKDIR /root/
 COPY --from=builder /app/bin/cfeed-linux-x86 .
 
 # Expose the port your application runs on
-EXPOSE 8080
+EXPOSE 50051
 
 # Command to run the binary
 CMD ["./cfeed-linux-x86", "--config", "./config/config.json"]

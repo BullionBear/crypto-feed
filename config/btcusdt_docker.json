@@ -1,5 +1,5 @@
 {
-    "port": 8080,
+    "port": 50051,
     "symbol": "BTCUSDT",
     "length": 2592000
 }
