@@ -2,6 +2,7 @@ package linkedlist
 
 import (
 	"errors"
+	"sync"
 )
 
 var (
@@ -22,6 +23,7 @@ type IndexLinkedList[T any] struct {
 	tail      *IndexedNode[T]
 	size      int64
 	nodeIndex map[int64]*IndexedNode[T]
+	mu        sync.RWMutex
 }
 
 func NewIndexedLinkedList[T any]() *IndexLinkedList[T] {
@@ -32,14 +34,19 @@ func NewIndexedLinkedList[T any]() *IndexLinkedList[T] {
 }
 
 func (ls *IndexLinkedList[T]) Head() (T, error) {
+	ls.mu.RLock()
+	defer ls.mu.RUnlock()
 	if ls.size == 0 {
 		var zero T
 		return zero, errPtrIsNil
 	}
+
 	return ls.head.data, nil
 }
 
 func (ls *IndexLinkedList[T]) HeadKey(step int) (int64, error) {
+	ls.mu.RLock()
+	defer ls.mu.RUnlock()
 	ptr := ls.head
 	if ptr == nil {
 		return 0, errPtrIsNil
@@ -55,6 +62,8 @@ func (ls *IndexLinkedList[T]) HeadKey(step int) (int64, error) {
 }
 
 func (ls *IndexLinkedList[T]) Tail() (T, error) {
+	ls.mu.RLock()
+	defer ls.mu.RUnlock()
 	if ls.size == 0 {
 		var zero T
 		return zero, errPtrIsNil
@@ -63,6 +72,8 @@ func (ls *IndexLinkedList[T]) Tail() (T, error) {
 }
 
 func (ls *IndexLinkedList[T]) TailKey(step int) (int64, error) {
+	ls.mu.RLock()
+	defer ls.mu.RUnlock()
 	ptr := ls.tail
 	if ptr == nil {
 		return 0, errPtrIsNil
@@ -78,6 +89,8 @@ func (ls *IndexLinkedList[T]) TailKey(step int) (int64, error) {
 }
 
 func (ls *IndexLinkedList[T]) PushBack(index int64, data T) error {
+	ls.mu.Lock()
+	defer ls.mu.Unlock()
 	if ls.size == 0 {
 		return ls.insertFirstNode(index, data)
 	}
@@ -97,6 +110,8 @@ func (ls *IndexLinkedList[T]) PushBack(index int64, data T) error {
 }
 
 func (ls *IndexLinkedList[T]) PushFront(index int64, data T) error {
+	ls.mu.Lock()
+	defer ls.mu.Unlock()
 	if ls.size == 0 {
 		return ls.insertFirstNode(index, data)
 	}
@@ -118,6 +133,8 @@ func (ls *IndexLinkedList[T]) PushFront(index int64, data T) error {
 }
 
 func (ls *IndexLinkedList[T]) PopBack() (T, error) {
+	ls.mu.Lock()
+	defer ls.mu.Unlock()
 	if ls.size == 0 {
 		var zero T
 		return zero, errPtrIsNil
@@ -140,6 +157,8 @@ func (ls *IndexLinkedList[T]) PopBack() (T, error) {
 }
 
 func (ls *IndexLinkedList[T]) PopFront() (T, error) {
+	ls.mu.Lock()
+	defer ls.mu.Unlock()
 	if ls.size == 0 {
 		var zero T
 		return zero, errPtrIsNil
@@ -161,6 +180,8 @@ func (ls *IndexLinkedList[T]) PopFront() (T, error) {
 }
 
 func (ls *IndexLinkedList[T]) PopIndex(index int64) (T, error) {
+	ls.mu.Lock()
+	defer ls.mu.Unlock()
 	// Check if the node exists in the map
 	node, exists := ls.nodeIndex[index]
 	if !exists {
@@ -185,6 +206,8 @@ func (ls *IndexLinkedList[T]) PopIndex(index int64) (T, error) {
 }
 
 func (ls *IndexLinkedList[T]) Get(index int64) (T, error) {
+	ls.mu.RLock()
+	defer ls.mu.RUnlock()
 	if node, exists := ls.nodeIndex[index]; exists {
 		return node.data, nil
 	}
@@ -193,10 +216,14 @@ func (ls *IndexLinkedList[T]) Get(index int64) (T, error) {
 }
 
 func (ls *IndexLinkedList[T]) Size() int64 {
+	ls.mu.RLock()
+	defer ls.mu.RUnlock()
 	return ls.size
 }
 
 func (ls *IndexLinkedList[T]) Next(index int64) (int64, error) {
+	ls.mu.RLock()
+	defer ls.mu.RUnlock()
 	node, exists := ls.nodeIndex[index]
 	if !exists {
 		return 0, errIndexNotExist
@@ -208,6 +235,8 @@ func (ls *IndexLinkedList[T]) Next(index int64) (int64, error) {
 }
 
 func (ls *IndexLinkedList[T]) Prev(index int64) (int64, error) {
+	ls.mu.RLock()
+	defer ls.mu.RUnlock()
 	node, exists := ls.nodeIndex[index]
 	if !exists {
 		return 0, errIndexNotExist

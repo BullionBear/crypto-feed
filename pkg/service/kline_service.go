@@ -26,7 +26,7 @@ type KLineService struct {
 	status      Status
 	errCh       chan struct{}
 	// pipeline control
-	mutex   sync.Mutex
+	mutex   sync.RWMutex
 	eventCh chan struct{}
 	// init control
 	isSetup bool
@@ -95,6 +95,8 @@ func (srv *KLineService) Status() Status {
 }
 
 func (srv *KLineService) Subscribe(handler func(event *Kline)) int64 {
+	srv.mutex.Lock()
+	defer srv.mutex.Unlock()
 	id := srv.id
 	srv.subscribers[id] = handler
 	srv.id++
@@ -102,12 +104,16 @@ func (srv *KLineService) Subscribe(handler func(event *Kline)) int64 {
 }
 
 func (srv *KLineService) Unsubscribe(subscriberID int64) error {
+	srv.mutex.Lock()
+	defer srv.mutex.Unlock()
 	delete(srv.subscribers, subscriberID)
 	return nil
 }
 
 func (srv *KLineService) ListSubsriber() []int64 {
 	result := []int64{}
+	srv.mutex.RLock()
+	defer srv.mutex.RUnlock()
 	for key := range srv.subscribers {
 		result = append(result, key)
 	}
@@ -134,14 +140,6 @@ func (srv *KLineService) Query(start int64, end int64, handler func(event *Kline
 		}
 	}
 	return nil
-}
-
-func (srv *KLineService) Next(key int64) (int64, error) {
-	next, err := srv.container.Next(key)
-	if err != nil {
-		return 0, err
-	}
-	return next, nil
 }
 
 func (srv *KLineService) subscribeCurrentKline() {
@@ -227,10 +225,11 @@ func (srv *KLineService) publishKline(setupCh chan<- struct{}) {
 				break
 			}
 			kline, _ := srv.container.Get(srv.currentTime)
+			srv.mutex.RLock()
 			for _, subscriber := range srv.subscribers {
 				subscriber(&kline)
 			}
-
+			srv.mutex.RUnlock()
 			srv.currentTime = nextTime
 		}
 	}
@@ -293,15 +292,11 @@ func (srv *KLineService) popHistoricalKline() {
 }
 
 func (srv *KLineService) pushBack(kline *Kline) error {
-	srv.mutex.Lock()
-	defer srv.mutex.Unlock()
 	closeTime := kline.OpenTime
 	return srv.container.PushBack(closeTime, *kline)
 }
 
 func (srv *KLineService) pushFront(kline *Kline) error {
-	srv.mutex.Lock()
-	defer srv.mutex.Unlock()
 	closeTime := kline.OpenTime
 	return srv.container.PushFront(closeTime, *kline)
 }
