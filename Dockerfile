@@ -42,4 +42,4 @@ COPY --from=builder /app/bin/cfeed-linux-x86 .
 EXPOSE 8080
 
 # Command to run the binary
-CMD ["./cfeed-linux-x86"]
+CMD ["./cfeed-linux-x86", "--config", "./config/config.json"]
