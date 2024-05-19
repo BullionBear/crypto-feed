@@ -27,7 +27,7 @@ RUN VERSION=$(git describe --tags --always --abbrev=0 --match='v[0-9]*.[0-9]*.[0
     LDFLAGS="-X '${PACKAGE}/internal/env.Version=${VERSION}' \
              -X '${PACKAGE}/internal/env.CommitHash=${COMMIT_HASH}' \
              -X '${PACKAGE}/internal/env.BuildTime=${BUILD_TIMESTAMP}'" && \
-    env GOOS=linux GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o ./bin/cfeed-linux-x86 cmd/server/*.go
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -ldflags="${LDFLAGS}" -o ./bin/cfeed-linux-x86 cmd/server/*.go
 
 # Stage 2: Create the final image
 FROM alpine:latest
