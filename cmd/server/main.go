@@ -25,7 +25,7 @@ func init() {
 	})
 
 	// Enable the logging of the source (file and line number)
-	// log.SetReportCaller(true)
+	log.SetReportCaller(true)
 
 	// Set the log level
 	log.SetLevel(log.InfoLevel)
