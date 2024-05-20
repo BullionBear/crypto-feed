@@ -77,7 +77,7 @@ func (s *feedServer) SubscribeKline(in *emptypb.Empty, stream pb.Feed_SubscribeK
 	log.Info("SubscribeKline get called")
 	defer log.Info("Leave SubscribeKline")
 	klineCh := make(chan *pb.Kline)
-
+	defer close(klineCh)
 	kline_handler := func(srvKline *service.Kline) {
 		pbKline := convertToPbKline(srvKline)
 		klineCh <- pbKline
