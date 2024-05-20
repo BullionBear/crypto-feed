@@ -107,6 +107,7 @@ func (srv *KLineService) Unsubscribe(subscriberID int64) error {
 	srv.mutex.Lock()
 	defer srv.mutex.Unlock()
 	delete(srv.subscribers, subscriberID)
+	log.Infof("current number of subscribers %d", len(srv.subscribers))
 	return nil
 }
 
@@ -239,7 +240,7 @@ func (srv *KLineService) publishKline(setupCh chan<- struct{}) {
 func (srv *KLineService) requestHistoricalKline(setupCh chan<- struct{}) {
 
 	ksrv := srv.client.NewKlinesService()
-	limit := 500
+	limit := 1000
 	ksrv.Symbol(strings.ToUpper(srv.symbol))
 	ksrv.Interval("1s")
 	ksrv.Limit(limit)
@@ -268,6 +269,7 @@ func (srv *KLineService) requestHistoricalKline(setupCh chan<- struct{}) {
 				log.Errorf("Fail to push front kline %+v", kline)
 			}
 		}
+		time.Sleep(30 * time.Millisecond) // avoid reach request rate limit
 	}
 	setupCh <- struct{}{}
 }
