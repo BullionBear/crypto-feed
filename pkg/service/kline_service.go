@@ -107,6 +107,7 @@ func (srv *KLineService) Unsubscribe(subscriberID int64) error {
 	srv.mutex.Lock()
 	defer srv.mutex.Unlock()
 	delete(srv.subscribers, subscriberID)
+	log.Infof("current number of subscribers %d", len(srv.subscribers))
 	return nil
 }
 
