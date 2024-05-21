@@ -151,6 +151,7 @@ func (srv *KLineService) subscribeCurrentKline() {
 			log.Errorf("fail to convert wsKline %s", err.Error())
 		}
 		srv.pushBack(kline)
+		srv.eventCh <- struct{}{}
 	}
 	var errHandler = func(err error) {
 		log.Errorf("handle error of wsKline %s", err.Error())
