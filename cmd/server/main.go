@@ -7,7 +7,7 @@ import (
 
 	"github.com/BullionBear/crypto-feed/api"
 	pb "github.com/BullionBear/crypto-feed/api/gen/feed"
-	"github.com/BullionBear/crypto-feed/internal/config"
+	"github.com/BullionBear/crypto-feed/domain/config"
 	"github.com/BullionBear/crypto-feed/pkg/service"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"

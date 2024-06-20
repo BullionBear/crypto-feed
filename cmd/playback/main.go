@@ -6,7 +6,8 @@ import (
 	"net"
 
 	"github.com/BullionBear/crypto-feed/api"
-	"github.com/BullionBear/crypto-feed/internal/config"
+	pb "github.com/BullionBear/crypto-feed/api/gen/feed"
+	"github.com/BullionBear/crypto-feed/domain/config"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
@@ -39,9 +40,9 @@ func main() {
 	}
 	s := grpc.NewServer()
 
-	feedServer := api.NewFeedServer(klineSrv)
+	playbackServer := api.NewPlaybackServer()
 
-	pb.RegisterFeedServer(s, feedServer)
+	pb.RegisterFeedServer(s, playbackServer)
 	log.Infof("server listening at %s", lis.Addr())
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
