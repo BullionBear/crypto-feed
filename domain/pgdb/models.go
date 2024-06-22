@@ -1,6 +1,6 @@
 package pgdb
 
-type BtcUsdtKline1s struct {
+type PlaybackKline struct {
 	ID                  uint `gorm:"primaryKey"`
 	OpenTime            int64
 	Open                float64
@@ -16,6 +16,6 @@ type BtcUsdtKline1s struct {
 	Ignore              int64
 }
 
-func (BtcUsdtKline1s) TableName() string {
+func (PlaybackKline) TableName() string {
 	return "btcusdt_kline_1s"
 }

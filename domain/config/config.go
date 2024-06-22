@@ -25,9 +25,11 @@ func ReadConfig(path string) (*Config, error) {
 }
 
 type PlaybackConfig struct {
-	Port     int            `json:"port"`
-	Symbol   string         `json:"symbol"`
-	Postgres PostgresConfig `json:"postgres"`
+	Port      int            `json:"port"`
+	Symbol    string         `json:"symbol"`
+	StartTime int64          `json:"start_time"`
+	EndTime   int64          `json:"end_time"`
+	Postgres  PostgresConfig `json:"postgres"`
 }
 
 type PostgresConfig struct {

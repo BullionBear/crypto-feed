@@ -72,7 +72,6 @@ func (s *feedServer) GetSubscriber(context.Context, *emptypb.Empty) (*pb.Subscri
 	}, nil
 }
 
-// StreamData implements feed.FeedServer
 func (s *feedServer) SubscribeKline(in *emptypb.Empty, stream pb.Feed_SubscribeKlineServer) error {
 	log.Info("SubscribeKline get called")
 	defer log.Info("Leave SubscribeKline")

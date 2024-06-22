@@ -21,8 +21,9 @@ func NewPgDatabase(host string, port int, user, password, dbName, sslMode, timeZ
 	return &PgDatabase{DB: db}, nil
 }
 
-func (pg *PgDatabase) QueryKlines(startTime, endTime int64) ([]BtcUsdtKline1s, error) {
-	var records []BtcUsdtKline1s
-	result := pg.DB.Where("open_time BETWEEN ? AND ?", startTime, endTime).Find(&records)
+func (pg *PgDatabase) QueryKlines(startTime, endTime int64, offset, limit int) ([]PlaybackKline, error) {
+	var records []PlaybackKline
+	result := pg.DB.Where("open_time BETWEEN ? AND ?", startTime, endTime).
+		Offset(offset).Limit(limit).Find(&records)
 	return records, result.Error
 }

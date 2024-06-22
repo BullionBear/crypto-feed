@@ -1,6 +1,8 @@
 {
     "port": 50051,
     "symbol": "BTCUSDT",
+    "start_time": 1682899200000,
+    "end_time": 1714521599999,
     "postgres":{
         "host": "localhost",
         "port": 5432,

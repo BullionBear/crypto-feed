@@ -47,7 +47,7 @@ func main() {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
-	playbackServer := api.NewPlaybackServer(db)
+	playbackServer := api.NewPlaybackServer(db, config.StartTime, config.EndTime)
 
 	pb.RegisterFeedServer(s, playbackServer)
 	log.Infof("server listening at %s", lis.Addr())
