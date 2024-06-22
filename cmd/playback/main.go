@@ -42,6 +42,7 @@ func main() {
 	s := grpc.NewServer()
 	// New Resources
 	dbConfig := config.Postgres
+	log.Infof("Postgres config: %v", dbConfig)
 	db, err := pgdb.NewPgDatabase(dbConfig.Host, dbConfig.Port, dbConfig.User, dbConfig.Password, dbConfig.DBName, dbConfig.SSLMode, dbConfig.Timezone)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)

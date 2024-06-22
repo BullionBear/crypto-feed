@@ -7,8 +7,8 @@
         "host": "localhost",
         "port": 5432,
         "user": "bullionbear",
-        "password": "bullionbear",
-        "db_name": "lykoraDB",
+        "password": "Sunshine4Jellybean",
+        "db_name": "lynkoraDB",
         "ssl_mode": "disable",
         "timezone": "UTC"
     }
