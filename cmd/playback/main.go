@@ -1,4 +1,4 @@
-package offline
+package main
 
 import (
 	"flag"
@@ -29,7 +29,7 @@ func main() {
 	flag.Parse()
 
 	// Read and parse the configuration file
-	config, err := config.ReadConfig(*configPath)
+	config, err := config.ReadPlaybackConfig(*configPath)
 	if err != nil {
 		log.Fatalf("Failed to read config: %v", err)
 	}

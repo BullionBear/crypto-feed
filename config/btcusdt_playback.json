@@ -1,0 +1,13 @@
+{
+    "port": 50051,
+    "symbol": "BTCUSDT",
+    "postgres":{
+        "host": "localhost",
+        "port": 5432,
+        "user": "bullionbear",
+        "password": "bullionbear",
+        "db_name": "lykoraDB",
+        "ssl_mode": "disable",
+        "timezone": "UTC"
+    }
+}
