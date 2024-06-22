@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"io"
+	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -75,20 +77,50 @@ func getSubscriber(c feed.FeedClient) {
 }
 
 func subscribeKline(c feed.FeedClient) {
-	// ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	// defer cancel()
 	stream, err := c.SubscribeKline(context.Background(), &emptypb.Empty{})
 	if err != nil {
 		log.Printf("could not subscribe to kline: %v", status.Convert(err).Message())
 		return
 	}
+
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
+	var dataCount int
+	var mu sync.Mutex
+	done := make(chan bool)
+	defer close(done)
+
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				mu.Lock()
+				log.Printf("Received %d Klines in the last second", dataCount)
+				dataCount = 0 // reset the count
+				mu.Unlock()
+			case <-done:
+				return
+			}
+		}
+	}()
+
 	for {
 		kline, err := stream.Recv()
 		if err != nil {
-			log.Printf("Error receiving from kline stream: %v", status.Convert(err).Message())
-			break
+			if err == io.EOF {
+				log.Printf("Stream closed by server")
+				return
+			} else {
+				log.Printf("Error receiving from kline stream: %v", status.Convert(err).Message())
+			}
 		}
-		log.Printf("Received Kline: %v", kline.Kline)
+		mu.Lock()
+		if dataCount == 0 {
+			log.Printf("Received %d Kline: %v", dataCount, kline.Kline)
+		}
+		dataCount++
+		mu.Unlock()
 	}
 }
 

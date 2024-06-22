@@ -27,7 +27,7 @@ func NewPlaybackServer(db *pgdb.PgDatabase, startTime, endTime int64) *playbackS
 		db:        db,
 		startTime: startTime,
 		endTime:   endTime,
-		sleepMs:   10,
+		sleepMs:   0,
 	}
 }
 
@@ -56,11 +56,16 @@ func (s *playbackServer) GetSubscriber(ctx context.Context, in *emptypb.Empty) (
 func (s *playbackServer) SubscribeKline(in *emptypb.Empty, stream pb.Feed_SubscribeKlineServer) error {
 	log.Info("SubscribeKline get called")
 	defer log.Info("Leave SubscribeKline")
-	pageSize := 1000
-	offset := 0
-
+	interval := int64(1_000_000) // 1,000,000 ms interval (1000 seconds)
+	currentTime := s.startTime
 	for {
-		klines, err := s.db.QueryKlines(s.startTime, s.endTime, offset, pageSize)
+		endTime := currentTime + interval
+		if endTime > s.endTime {
+			endTime = s.endTime
+		}
+		//	Query klines from the database
+		log.Infof("Querying klines from %d to %d", currentTime, endTime)
+		klines, err := s.db.QueryKlines(currentTime, endTime)
 		if err != nil {
 			return err
 		}
@@ -71,7 +76,9 @@ func (s *playbackServer) SubscribeKline(in *emptypb.Empty, stream pb.Feed_Subscr
 
 		for _, kline := range klines {
 			// sleep
-			time.Sleep(time.Duration(s.sleepMs) * time.Millisecond)
+			if s.sleepMs > 0 {
+				time.Sleep(time.Duration(s.sleepMs) * time.Millisecond)
+			}
 			if err := stream.Send(&pb.KlineResponse{
 				Kline: playbackToPbKline(&kline),
 			}); err != nil {
@@ -79,8 +86,13 @@ func (s *playbackServer) SubscribeKline(in *emptypb.Empty, stream pb.Feed_Subscr
 			}
 		}
 
-		// Increment the offset for the next batch of records
-		offset += pageSize
+		// Increment the current time for the next batch of records
+		currentTime = endTime + 1
+
+		// If we've reached the end of the time range, break the loop
+		if currentTime >= s.endTime {
+			break
+		}
 	}
 
 	return nil
@@ -89,10 +101,16 @@ func (s *playbackServer) SubscribeKline(in *emptypb.Empty, stream pb.Feed_Subscr
 func (s *playbackServer) ReadHistoricalKline(request *pb.ReadKlineRequest, stream pb.Feed_ReadHistoricalKlineServer) error {
 	start := int64(request.Start) / 1000 * 1000
 	end := int64(request.End) / 1000 * 1000
-	pageSize := 1000
-	offset := 0
+
+	interval := int64(1_000_000) // 1,000,000 ms interval (1000 seconds)
+	currentTime := start
 	for {
-		klines, err := s.db.QueryKlines(start, end, offset, pageSize)
+		endTime := currentTime + interval
+		if endTime > end {
+			endTime = end
+		}
+
+		klines, err := s.db.QueryKlines(currentTime, endTime)
 		if err != nil {
 			return err
 		}
@@ -109,8 +127,13 @@ func (s *playbackServer) ReadHistoricalKline(request *pb.ReadKlineRequest, strea
 			}
 		}
 
-		// Increment the offset for the next batch of records
-		offset += pageSize
+		// Increment the current time for the next batch of records
+		currentTime = endTime + 1
+
+		// If we've reached the end of the time range, break the loop
+		if currentTime > end {
+			break
+		}
 	}
 	return nil
 }
