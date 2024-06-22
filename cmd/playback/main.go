@@ -8,6 +8,7 @@ import (
 	"github.com/BullionBear/crypto-feed/api"
 	pb "github.com/BullionBear/crypto-feed/api/gen/feed"
 	"github.com/BullionBear/crypto-feed/domain/config"
+	"github.com/BullionBear/crypto-feed/domain/pgdb"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
@@ -39,8 +40,14 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 	s := grpc.NewServer()
+	// New Resources
+	dbConfig := config.Postgres
+	db, err := pgdb.NewPgDatabase(dbConfig.Host, dbConfig.Port, dbConfig.User, dbConfig.Password, dbConfig.DBName, dbConfig.SSLMode, dbConfig.Timezone)
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
 
-	playbackServer := api.NewPlaybackServer()
+	playbackServer := api.NewPlaybackServer(db)
 
 	pb.RegisterFeedServer(s, playbackServer)
 	log.Infof("server listening at %s", lis.Addr())

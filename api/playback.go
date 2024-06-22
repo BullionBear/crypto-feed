@@ -6,12 +6,16 @@ PlaybackServer is used to backtest trading strategies with same interface as Fee
 
 import (
 	pb "github.com/BullionBear/crypto-feed/api/gen/feed"
+	"github.com/BullionBear/crypto-feed/domain/pgdb"
 )
 
 type playbackServer struct {
 	pb.UnimplementedFeedServer
+	db *pgdb.PgDatabase
 }
 
-func NewPlaybackServer() *playbackServer {
-	return &playbackServer{}
+func NewPlaybackServer(db *pgdb.PgDatabase) *playbackServer {
+	return &playbackServer{
+		db: db,
+	}
 }
