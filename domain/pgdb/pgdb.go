@@ -28,3 +28,9 @@ func (pg *PgDatabase) QueryKlines(startTime, endTime int64) ([]PlaybackKline, er
 		Find(&records)
 	return records, result.Error
 }
+
+func (pg *PgDatabase) QueryKline(openTime int64) (PlaybackKline, error) {
+	var record PlaybackKline
+	result := pg.DB.Where("open_time = ?", openTime).First(&record)
+	return record, result.Error
+}

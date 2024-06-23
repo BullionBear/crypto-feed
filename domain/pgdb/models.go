@@ -1,7 +1,6 @@
 package pgdb
 
 type PlaybackKline struct {
-	ID                  uint `gorm:"primaryKey"`
 	OpenTime            int64
 	Open                float64
 	High                float64
