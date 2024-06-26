@@ -11,9 +11,11 @@ LDFLAGS := -X '${PACKAGE}/internal/env.Version=${VERSION}' \
 gen:
 	protoc --go_out=. --go-grpc_out=. api/proto/feed.proto
 
-build:
+cfeed:
 	env GOOS=linux GOARCH=amd64 go build -ldflags="$(LDFLAGS)" -o ./bin/$(BINARY)-linux-x86 cmd/server/*.go
 	env GOOS=darwin GOARCH=arm64 go build -ldflags="$(LDFLAGS)" -o ./bin/$(BINARY)-darwin-arm64 cmd/server/*.go
+
+playback:
 	env GOOS=linux GOARCH=amd64 go build -ldflags="$(LDFLAGS)" -o ./bin/playback-linux-x86 cmd/playback/*.go
 	env GOOS=darwin GOARCH=arm64 go build -ldflags="$(LDFLAGS)" -o ./bin/playback-darwin-arm64 cmd/playback/*.go
 
