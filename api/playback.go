@@ -56,7 +56,7 @@ func (s *playbackServer) GetSubscriber(ctx context.Context, in *emptypb.Empty) (
 func (s *playbackServer) SubscribeKline(in *emptypb.Empty, stream pb.Feed_SubscribeKlineServer) error {
 	log.Info("SubscribeKline get called")
 	defer log.Info("Leave SubscribeKline")
-	interval := int64(1_000_000) // 1,000,000 ms interval (1000 seconds)
+	interval := int64(3_600_000) // 1 hour interval (3600 seconds)
 	currentTime := s.startTime
 	for {
 		endTime := currentTime + interval
