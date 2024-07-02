@@ -59,8 +59,8 @@ func (s *playbackServer) SubscribeKline(in *emptypb.Empty, stream pb.Feed_Subscr
 	interval := int64(3_600_000) // 1 hour interval (3600 seconds)
 	currentTime := s.startTime
 	for {
-		endTime := currentTime + interval
-		if endTime > s.endTime {
+		endTime := currentTime + interval - 1
+		if endTime >= s.endTime {
 			endTime = s.endTime
 		}
 		//	Query klines from the database
