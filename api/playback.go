@@ -64,7 +64,7 @@ func (s *playbackServer) SubscribeKline(in *emptypb.Empty, stream pb.Feed_Subscr
 			endTime = s.endTime
 		}
 		//	Query klines from the database
-		log.Infof("Querying klines from %d to %d", currentTime, endTime)
+		log.Infof("Subscribe Kline: Querying klines from %d to %d", currentTime, endTime)
 		klines, err := s.db.QueryKlines(currentTime, endTime)
 		if err != nil {
 			return err
@@ -102,14 +102,14 @@ func (s *playbackServer) ReadHistoricalKline(request *pb.ReadKlineRequest, strea
 	start := int64(request.Start) / 1000 * 1000
 	end := int64(request.End) / 1000 * 1000
 
-	interval := int64(1_000_000) // 1,000,000 ms interval (1000 seconds)
+	interval := int64(3_600_000) // 3,600,000 ms interval (3600 seconds)
 	currentTime := start
 	for {
-		endTime := currentTime + interval
-		if endTime > end {
-			endTime = end
+		endTime := currentTime + interval - 1
+		if endTime >= s.endTime {
+			endTime = s.endTime
 		}
-
+		log.Infof("Read History: Querying klines from %d to %d", currentTime, endTime)
 		klines, err := s.db.QueryKlines(currentTime, endTime)
 		if err != nil {
 			return err

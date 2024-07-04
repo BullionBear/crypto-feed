@@ -37,10 +37,10 @@ func main() {
 	getSubscriber(c)
 
 	// Subscribe to Kline stream
-	subscribeKline(c)
+	// subscribeKline(c)
 
 	// Read historical Kline
-	// readHistoricalKline(c, 1609459200, 1609545600) // Example timestamps
+	readHistoricalKline(c, 1682899000000, 1682899200000) // Example timestamps
 }
 
 func getConfig(c feed.FeedClient) {
@@ -124,21 +124,22 @@ func subscribeKline(c feed.FeedClient) {
 	}
 }
 
-// func readHistoricalKline(c feed.FeedClient, start, end int64) {
-// 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-// 	defer cancel()
-// 	stream, err := c.ReadHistoricalKline(ctx, &feed.ReadKlineRequest{Start: start, End: end})
-// 	if err != nil {
-// 		log.Printf("could not read historical kline: %v", status.Convert(err).Message())
-// 		return
-// 	}
-// 	for {
-// 		kline, err := stream.Recv()
-// 		if err != nil {
-// 			log.Printf("Error receiving from historical kline stream: %v", status.Convert(err).Message())
-// 			break
-// 		}
-// 		log.Printf("Received Historical Kline: %v", kline.Kline)
-// 	}
-// }
+func readHistoricalKline(c feed.FeedClient, start, end int64) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	stream, err := c.ReadHistoricalKline(ctx, &feed.ReadKlineRequest{Start: start, End: end})
+	if err != nil {
+		log.Printf("could not read historical kline: %v", status.Convert(err).Message())
+		return
+	}
+	for {
+		kline, err := stream.Recv()
+		if err != nil {
+			log.Printf("Error receiving from historical kline stream: %v", status.Convert(err).Message())
+			break
+		}
+		log.Printf("Received Historical Kline: %v", kline.Kline)
+	}
+}
+
 //
