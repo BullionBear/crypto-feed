@@ -1,0 +1,15 @@
+{
+    port: 50051,
+    symbol: "BTCUSDT",
+    start_time: 1682899200000,
+    end_time: 1688083199999,
+    postgres:{
+        host: "localhost",
+        port: 5432,
+        user: "bullionbear",
+        password: "Sunshine4Jellybean",
+        db_name: "lynkoraDB",
+        ssl_mode: "disable",
+        timezone: "UTC"
+    }
+}

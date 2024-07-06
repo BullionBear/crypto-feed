@@ -1,8 +1,9 @@
 package config
 
 import (
-	"encoding/json"
 	"os"
+
+	"github.com/yosuke-furukawa/json5/encoding/json5"
 )
 
 type Config struct {
@@ -17,7 +18,7 @@ func ReadConfig(path string) (*Config, error) {
 		return nil, err
 	}
 	var config Config
-	err = json.Unmarshal(file, &config)
+	err = json5.Unmarshal(file, &config)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +49,7 @@ func ReadPlaybackConfig(path string) (*PlaybackConfig, error) {
 		return nil, err
 	}
 	var config PlaybackConfig
-	err = json.Unmarshal(file, &config)
+	err = json5.Unmarshal(file, &config)
 	if err != nil {
 		return nil, err
 	}

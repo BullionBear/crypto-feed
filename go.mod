@@ -5,6 +5,7 @@ go 1.21.3
 require (
 	github.com/adshao/go-binance/v2 v2.5.0
 	github.com/sirupsen/logrus v1.9.3
+	github.com/yosuke-furukawa/json5 v0.1.1
 	google.golang.org/grpc v1.64.0
 	google.golang.org/protobuf v1.34.1
 	gorm.io/driver/postgres v1.5.9
