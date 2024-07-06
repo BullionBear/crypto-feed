@@ -1,8 +1,8 @@
 {
     port: 50051,
     symbol: "BTCUSDT",
-    start_time: 1682899200000,
-    end_time: 1688083199999,
+    start_time: 1682899200000,  // May 01 2023 00:00:00 GMT+0000
+    end_time: 1688083199999, // Jun 29 2023 23:59:59 GMT+0000
     postgres:{
         host: "localhost",
         port: 5432,
